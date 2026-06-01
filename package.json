@@ -1,0 +1,14 @@
+{
+  "name": "git-branch-cleanup-assistant",
+  "version": "0.1.0",
+  "description": "Safe local git branch cleanup assistant: finds stale and merged branches with dry-run deletion preview.",
+  "type": "module",
+  "bin": { "git-branch-cleanup": "dist/cli.js" },
+  "scripts": { "build": "tsc", "dev": "tsx src/cli.ts", "test": "vitest run", "lint": "tsc --noEmit", "prepack": "npm run build" },
+  "keywords": ["cli", "git", "branches", "cleanup", "developer-tools"],
+  "license": "MIT",
+  "dependencies": { "commander": "^12.1.0", "picocolors": "^1.0.1" },
+  "devDependencies": { "@types/node": "^22.10.2", "tsx": "^4.19.2", "typescript": "^5.7.2", "vitest": "^4.1.7" },
+  "engines": { "node": ">=20" },
+  "files": ["dist", "README.md", "LICENSE"]
+}
