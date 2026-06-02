@@ -1,12 +1,13 @@
 import { Command } from 'commander';
 import { execFileSync } from 'node:child_process';
-import { exitCodeFromFindings, Finding, printFindings } from './output.js';
+import { exitCodeFromFindings, Finding, printFindings, printJson } from './output.js';
 
 interface BranchOptions {
   stale: string;
   delete: boolean;
   dryRun: boolean;
   protected: string;
+  json: boolean;
 }
 
 export interface BranchInfo {
@@ -25,7 +26,7 @@ function git(args: string[]): string {
 export function analyzeBranches(staleDays: number, protectedBranches: string[]): BranchInfo[] {
   git(['rev-parse', '--is-inside-work-tree']);
   const protectedSet = new Set(protectedBranches);
-  const merged = new Set(git(['branch', '--merged', '--format=%(refname:short)']).split(/\r?\n/).map((x) => x.trim()).filter(Boolean));
+  const merged = new Set(git(['branch', '--format=%(refname:short)', '--merged']).split(/\r?\n/).map((x) => x.trim()).filter(Boolean));
   const rows = git(['branch', '--format=%(refname:short)|%(HEAD)|%(committerdate:unix)'])
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -68,23 +69,30 @@ export function gitBranchesCommand(): Command {
     .option('--delete', 'Delete safe candidates only. Refuses without --dry-run in MVP.', false)
     .option('--dry-run', 'Preview deletion without changing branches', false)
     .option('--protected <names>', 'Comma-separated protected branches', 'main,master,develop,dev,staging,production')
+    .option('--json', 'print machine-readable JSON output', false)
     .action((options: BranchOptions) => {
       const staleDays = Number(options.stale);
       const protectedBranches = options.protected.split(',').map((x) => x.trim()).filter(Boolean);
       const branches = analyzeBranches(staleDays, protectedBranches);
       const findings = toFindings(branches, staleDays);
-      printFindings('Git Branch Cleanup', findings);
-
       const candidates = branches.filter((b) => !b.current && !b.protected && b.merged && b.ageDays >= staleDays);
+      if (options.json) {
+        printJson('Git Branch Cleanup', findings, { branches, candidates: candidates.map((branch) => branch.name), staleDays, protectedBranches });
+      } else {
+        printFindings('Git Branch Cleanup', findings);
+      }
+
       if (options.delete) {
         if (!options.dryRun) {
           console.error('\nRefusing actual deletion in MVP without interactive confirmation. Re-run with --delete --dry-run to preview.');
           process.exitCode = 1;
           return;
         }
-        console.log('\nWould delete:');
-        for (const candidate of candidates) console.log(`- ${candidate.name}`);
-        console.log('\nNo branches deleted because --dry-run was used.');
+        if (!options.json) {
+          console.log('\nWould delete:');
+          for (const candidate of candidates) console.log(`- ${candidate.name}`);
+          console.log('\nNo branches deleted because --dry-run was used.');
+        }
       }
 
       process.exitCode = exitCodeFromFindings(findings.filter((f) => f.level === 'error'));

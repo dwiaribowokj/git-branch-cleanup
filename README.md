@@ -15,6 +15,7 @@ Old local branches pile up fast. `git-branch-cleanup` gives you a quick read-onl
 npm install -g git-branch-cleanup-assistant
 git-branch-cleanup --stale 30
 git-branch-cleanup --stale 30 --delete --dry-run
+git-branch-cleanup --stale 30 --json
 ```
 
 Local development:
@@ -47,6 +48,8 @@ No branches deleted because --dry-run was used.
 - Merged branch detection.
 - Stale branch detection by age.
 - Dry-run cleanup preview.
+
+- Machine-readable `--json` output for CI and automation.
 
 ## Safety
 
